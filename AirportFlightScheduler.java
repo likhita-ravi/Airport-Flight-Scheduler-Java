@@ -1,226 +1,311 @@
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-class ScheduledFlight {
-    private final String number;
-    private String destination;
-    private String departureTime;
-    private String status;
-
-    ScheduledFlight(String number, String destination, String departureTime, String status) {
-        this.number = number;
-        this.destination = destination;
-        this.departureTime = departureTime;
-        this.status = status;
-    }
-
-    String getNumber() { return number; }
-    String getDestination() { return destination; }
-    String getDepartureTime() { return departureTime; }
-    String getStatus() { return status; }
-    void setStatus(String status) { this.status = status; }
-
-    @Override
-    public String toString() {
-        return number + " | " + destination + " | " + departureTime + " | " + status;
-    }
-
-    String toFileLine() {
-        return String.join(",", number, destination, departureTime, status);
-    }
-
-    static ScheduledFlight fromFileLine(String line) {
-        String[] p = line.split(",", -1);
-        if (p.length != 4) return null;
-        return new ScheduledFlight(p[0], p[1], p[2], p[3]);
-    }
-}
+import java.util.Scanner;
 
 public class AirportFlightScheduler {
-    private static final Scanner input = new Scanner(System.in);
-    private static final List<ScheduledFlight> flights = new ArrayList<>();
-    private static final Path FILE = Paths.get("flights.txt");
+
+    static Scanner sc = new Scanner(System.in);
+    static Flight[] flights = new Flight[100];
+    static int count = 0;
+
+    //Module 4
+    static class Flight implements Comparable<Flight> {
+        private String number;
+        private String destination;
+        private String time;
+        private String status;
+
+        Flight(String number, String destination,
+               String time, String status) {
+            this.number = number;
+            this.destination = destination;
+            this.time = time;
+            this.status = status;
+        }
+
+        public String getNumber() {
+            return number;
+        }
+
+        public String getDestination() {
+            return destination;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String toString() {
+            return number + " | " + destination
+                    + " | " + time + " | " + status;
+        }
+
+        // Module 5: Sorting
+        public int compareTo(Flight other) {
+            return number.compareTo(other.number);
+        }
+    }
 
     public static void main(String[] args) {
-        addSampleFlights();
-        int choice = 0;
 
+        loadFlights();
+
+        if (count == 0) {
+            addFlight("AI101", "Delhi", "10:30 AM", "Scheduled");
+            addFlight("6E202", "Mumbai", "12:00 PM", "Delayed");
+            addFlight("UK303", "Chennai", "2:30 PM", "Departed");
+        }
+
+        int choice = -1;
+
+        //Module 2
         do {
-            System.out.println("\\n===== AIRPORT FLIGHT BOARD & SCHEDULER =====");
-            System.out.println("1. Show all flights");
-            System.out.println("2. Search flight");
-            System.out.println("3. Update flight status");
-            System.out.println("4. Show delayed flights");
-            System.out.println("5. Sort flights by number");
-            System.out.println("6. Add a flight");
-            System.out.println("7. Save flights");
-            System.out.println("8. Load flights");
-            System.out.println("9. Exit");
+            System.out.println("\n=== AIRPORT FLIGHT BOARD ===");
+            System.out.println("1. Display Flights");
+            System.out.println("2. Add Flight");
+            System.out.println("3. Search Flight");
+            System.out.println("4. Update Status");
+            System.out.println("5. Sort Flights");
+            System.out.println("6. Flight Report");
+            System.out.println("7. Save Flights");
+            System.out.println("8. Matrix Addition");
+            System.out.println("0. Exit");
             System.out.print("Enter choice: ");
 
-            while (!input.hasNextInt()) {
-                System.out.print("Enter a number from 1 to 9: ");
-                input.next();
-            }
-            choice = input.nextInt();
-            input.nextLine();
+            try {
+                choice = Integer.parseInt(sc.nextLine());
 
-            switch (choice) {
-                case 1: showFlights(); break;
-                case 2: searchFlight(); break;
-                case 3: updateStatus(); break;
-                case 4: showDelayedFlights(); break;
-                case 5: sortFlights(); break;
-                case 6: addFlight(); break;
-                case 7: saveFlights(); break;
-                case 8: loadFlights(); break;
-                case 9: System.out.println("Thank you for using the scheduler!"); break;
-                default: System.out.println("Invalid choice.");
-            }
-        } while (choice != 9);
+                switch (choice) {
+                    case 1:
+                        displayFlights();
+                        break;
+                    case 2:
+                        addFlight();
+                        break;
+                    case 3:
+                        searchFlight();
+                        break;
+                    case 4:
+                        updateStatus();
+                        break;
+                    case 5:
+                        sortFlights();
+                        break;
+                    case 6:
+                        flightReport();
+                        break;
+                    case 7:
+                        saveFlights();
+                        break;
+                    case 8:
+                        matrixAddition();
+                        break;
+                    case 0:
+                        saveFlights();
+                        System.out.println("Thank you!");
+                        break;
+                    default:
+                        System.out.println("Invalid choice.");
+                }
 
-        input.close();
+            } catch (NumberFormatException e) {
+                System.out.println("Enter a valid number.");
+                choice = -1;
+            }
+
+        } while (choice != 0);
+
+        sc.close();
     }
 
-    private static void addSampleFlights() {
-        flights.add(new ScheduledFlight("AI101", "Delhi", "10:30 AM", "Scheduled"));
-        flights.add(new ScheduledFlight("6E202", "Mumbai", "12:00 PM", "Delayed"));
-        flights.add(new ScheduledFlight("UK303", "Chennai", "2:30 PM", "Departed"));
+    //Module 3
+    static void addFlight() {
+        System.out.print("Enter flight number: ");
+        String number = sc.nextLine().trim().toUpperCase();
+
+        System.out.print("Enter destination: ");
+        String destination = sc.nextLine().trim();
+
+        System.out.print("Enter departure time: ");
+        String time = sc.nextLine().trim();
+
+        if (number.isEmpty() || destination.isEmpty()
+                || time.isEmpty()) {
+            System.out.println("Details cannot be empty.");
+            return;
+        }
+
+        addFlight(number, destination, time, "Scheduled");
     }
 
-    private static void showFlights() {
-        if (flights.isEmpty()) {
+    static void addFlight(String number, String destination,
+                          String time, String status) {
+
+        if (count == flights.length) {
+            System.out.println("Flight list is full.");
+            return;
+        }
+
+        if (search(number) != -1) {
+            System.out.println("Flight already exists.");
+            return;
+        }
+
+        flights[count] = new Flight(
+                number, destination, time, status);
+        count++;
+
+        System.out.println("Flight added successfully.");
+    }
+    static void displayFlights() {
+        if (count == 0) {
             System.out.println("No flights available.");
             return;
         }
-        System.out.println("\\nFlight | Destination | Departure | Status");
-        flights.forEach(System.out::println);
-    }
 
-    private static void searchFlight() {
-        System.out.print("Enter flight number: ");
-        String wanted = input.nextLine().trim();
-        Optional<ScheduledFlight> found = flights.stream()
-                .filter(f -> f.getNumber().equalsIgnoreCase(wanted))
-                .findFirst();
-        System.out.println(found.map(Object::toString).orElse("Flight not found."));
-    }
+        System.out.println("\nFlight | Destination | Time | Status");
 
-    private static void updateStatus() {
-        System.out.print("Enter flight number: ");
-        String wanted = input.nextLine().trim();
-        ScheduledFlight match = null;
-        for (ScheduledFlight flight : flights) {
-            if (flight.getNumber().equalsIgnoreCase(wanted)) {
-                match = flight;
-                break;
+        for (int i = 0; i < count; i++) {
+            System.out.println(flights[i]);
+        }
+    }
+    static int search(String number) {
+        for (int i = 0; i < count; i++) {
+            if (flights[i].getNumber()
+                    .equalsIgnoreCase(number)) {
+                return i;
             }
         }
-        if (match == null) {
+
+        return -1;
+    }
+
+    static void searchFlight() {
+        System.out.print("Enter flight number: ");
+        String number = sc.nextLine().trim();
+
+        int index = search(number);
+
+        if (index != -1) {
+            System.out.println("Flight found:");
+            System.out.println(flights[index]);
+        } else {
+            System.out.println("Flight not found.");
+        }
+    }
+
+    static void updateStatus() {
+        System.out.print("Enter flight number: ");
+        String number = sc.nextLine().trim();
+
+        int index = search(number);
+
+        if (index == -1) {
             System.out.println("Flight not found.");
             return;
         }
 
-        System.out.print("Enter status (Scheduled/Delayed/Departed): ");
-        String status = input.nextLine().trim();
-        try {
-            if (!status.equalsIgnoreCase("Scheduled")
-                    && !status.equalsIgnoreCase("Delayed")
-                    && !status.equalsIgnoreCase("Departed")) {
-                throw new IllegalArgumentException("Choose Scheduled, Delayed, or Departed.");
-            }
-            match.setStatus(capitalize(status));
-            System.out.println("Updated: " + match);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Update failed: " + e.getMessage());
-        }
-    }
+        System.out.print("Enter new status: ");
+        String status = sc.nextLine().trim();
 
-    private static String capitalize(String value) {
-        String lower = value.toLowerCase(Locale.ROOT);
-        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
-    }
+        if (status.equalsIgnoreCase("Scheduled") || status.equalsIgnoreCase("Delayed") || status.equalsIgnoreCase("Departed")) {
 
-    private static void showDelayedFlights() {
-        Predicate<ScheduledFlight> delayed =
-                flight -> flight.getStatus().equalsIgnoreCase("Delayed");
-        List<ScheduledFlight> result = flights.stream()
-                .filter(delayed)
-                .sorted(Comparator.comparing(ScheduledFlight::getNumber))
-                .collect(Collectors.toList());
-
-        if (result.isEmpty()) {
-            System.out.println("No delayed flights.");
+            flights[index].setStatus(status);
+            System.out.println("Status updated.");
         } else {
-            result.forEach(System.out::println);
-            System.out.println("Total delayed flights: " + result.size());
+            System.out.println("Invalid status.");
         }
     }
 
-    private static void sortFlights() {
-        flights.sort(Comparator.comparing(ScheduledFlight::getNumber));
-        System.out.println("Flights sorted by number.");
-        showFlights();
+    //Module 5
+    static void sortFlights() {
+        java.util.Arrays.sort(flights, 0, count);
+
+        System.out.println("Flights sorted by flight number.");
+        displayFlights();
     }
 
-    private static void addFlight() {
-        System.out.print("Flight number: ");
-        String number = input.nextLine().trim();
-        if (number.isEmpty() || findFlight(number) != null) {
-            System.out.println("Flight number is blank or already exists.");
-            return;
-        }
-        System.out.print("Destination: ");
-        String destination = input.nextLine().trim();
-        System.out.print("Departure time: ");
-        String time = input.nextLine().trim();
+    //Module 6
+    static void flightReport() {
+        long delayed = java.util.Arrays
+                .stream(flights, 0, count)
+                .filter(f -> f.getStatus()
+                        .equalsIgnoreCase("Delayed"))
+                .count();
 
-        if (destination.isEmpty() || time.isEmpty()) {
-            System.out.println("Destination and time cannot be blank.");
-            return;
-        }
-        flights.add(new ScheduledFlight(number, destination, time, "Scheduled"));
-        System.out.println("Flight added.");
+        System.out.println("Total flights: " + count);
+        System.out.println("Delayed flights: " + delayed);
     }
 
-    private static ScheduledFlight findFlight(String number) {
-        for (ScheduledFlight flight : flights) {
-            if (flight.getNumber().equalsIgnoreCase(number)) return flight;
-        }
-        return null;
-    }
+    //Module 5
+    static void saveFlights() {
+        try (java.io.BufferedWriter writer =
+                java.nio.file.Files.newBufferedWriter(
+                        java.nio.file.Paths.get("flights.txt"))) {
 
-    private static void saveFlights() {
-        List<String> lines = flights.stream()
-                .map(ScheduledFlight::toFileLine)
-                .collect(Collectors.toList());
-        try {
-            Files.write(FILE, lines);
-            System.out.println("Saved " + lines.size() + " flight(s) to " + FILE.toAbsolutePath());
-        } catch (IOException e) {
-            System.out.println("Could not save flights: " + e.getMessage());
-        }
-    }
-
-    private static void loadFlights() {
-        if (!Files.exists(FILE)) {
-            System.out.println("No saved file yet. Choose Save flights first.");
-            return;
-        }
-        try {
-            List<ScheduledFlight> loaded = new ArrayList<>();
-            for (String line : Files.readAllLines(FILE)) {
-                ScheduledFlight flight = ScheduledFlight.fromFileLine(line);
-                if (flight != null) loaded.add(flight);
+            for (int i = 0; i < count; i++) {
+                writer.write(flights[i].getNumber() + "|"
+                        + flights[i].getDestination() + "|"
+                        + flights[i].time + "|"
+                        + flights[i].getStatus());
+                writer.newLine();
             }
-            flights.clear();
-            flights.addAll(loaded);
-            System.out.println("Loaded " + flights.size() + " flight(s).");
-        } catch (IOException e) {
-            System.out.println("Could not load flights: " + e.getMessage());
+
+            System.out.println("Flights saved.");
+
+        } catch (java.io.IOException e) {
+            System.out.println("Error saving flights.");
+        }
+    }
+    static void loadFlights() {
+        java.nio.file.Path path =
+                java.nio.file.Paths.get("flights.txt");
+
+        if (!java.nio.file.Files.exists(path)) {
+            return;
+        }
+
+        try (java.io.BufferedReader reader =
+                java.nio.file.Files.newBufferedReader(path)) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null
+                    && count < flights.length) {
+
+                String[] data = line.split("\\|", -1);
+
+                if (data.length == 4
+                        && !data[0].trim().isEmpty()
+                        && search(data[0].trim()) == -1) {
+
+                    flights[count] = new Flight(
+                            data[0].trim(),
+                            data[1].trim(),
+                            data[2].trim(),
+                            data[3].trim());
+
+                    count++;
+                }
+            }
+
+        } catch (java.io.IOException e) {
+            System.out.println("Could not load saved flights.");
+        }
+    }
+    static void matrixAddition() {
+        int[][] a = {{1, 2}, {3, 4}};
+        int[][] b = {{5, 6}, {7, 8}};
+
+        System.out.println("Matrix addition:");
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                System.out.print((a[i][j] + b[i][j]) + " ");
+            }
+            System.out.println();
         }
     }
 }

@@ -11,16 +11,14 @@ A console-based Java application that demonstrates the six course modules.
 
 ## Concepts shown
 CO1: IPO problem-solving, variables, data types, operators, formatted console input/output.
+
 CO2: selection, switch, loops, input validation, termination.
+
 CO3: methods, arrays in the standalone module, searching, recursion and aggregation.
+
 CO4: classes, objects, constructors, encapsulation, inheritance, overriding, exceptions.
+
 CO5: String processing, comparison, sorting, text-file input/output.
+
 CO6: List/Map/Set, generics, predicates, lambdas, method references, stream pipelines and reports.
 
-## Run
-```bash
-javac AirportFlightScheduler.java
-java AirportFlightScheduler
-```
-
-Choose option 7 to save records to `flights.txt`, and option 8 to load them. The file is created in the current working directory.
